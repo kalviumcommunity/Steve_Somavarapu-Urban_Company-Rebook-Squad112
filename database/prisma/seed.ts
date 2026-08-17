@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { PrismaClient, Role, BookingStatus, BookingSource, SlotStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 
 const prisma = new PrismaClient();
