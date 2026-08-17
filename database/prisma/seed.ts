@@ -6,18 +6,25 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seeding for Urban Company Rebook...');
 
-  // Clean existing domain tables (in reverse dependency order)
-  await prisma.review.deleteMany();
-  await prisma.payment.deleteMany();
-  await prisma.booking.deleteMany();
-  await prisma.professionalAvailability.deleteMany();
-  await prisma.professionalProfile.deleteMany();
-  await prisma.service.deleteMany();
-  await prisma.serviceCategory.deleteMany();
-  await prisma.address.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.user.deleteMany();
+  const allowDestructiveSeed = process.env.ALLOW_DESTRUCTIVE_SEED === 'true' || process.argv.includes('--force');
+
+  if (allowDestructiveSeed) {
+    console.log('⚠️ Destructive seed opt-in detected. Cleaning existing domain tables in reverse dependency order...');
+    // Clean existing domain tables (in reverse dependency order)
+    await prisma.review.deleteMany();
+    await prisma.payment.deleteMany();
+    await prisma.booking.deleteMany();
+    await prisma.professionalAvailability.deleteMany();
+    await prisma.professionalProfile.deleteMany();
+    await prisma.service.deleteMany();
+    await prisma.serviceCategory.deleteMany();
+    await prisma.address.deleteMany();
+    await prisma.session.deleteMany();
+    await prisma.account.deleteMany();
+    await prisma.user.deleteMany();
+  } else {
+    console.log('ℹ️ Skipping deletion sequence (pass ALLOW_DESTRUCTIVE_SEED=true or --force to clean existing tables).');
+  }
 
   // 1. Create Service Categories
   const carCategory = await prisma.serviceCategory.create({

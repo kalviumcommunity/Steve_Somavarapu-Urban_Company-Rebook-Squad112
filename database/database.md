@@ -2,7 +2,7 @@
 **Project:** Urban Company — One-Click Rebooking  
 **Target Backend Dev:** [Sai Rishit Sunku](mailto:sairishit.sunku.s.112@kalvium.community)  
 **Database Architect:** [Steve Antony Somavarapu](mailto:steveantony.somavarapu.s.112@kalvium.community)  
-**PRD Reference:** [Urban Company rebook system PRD.md](file:///Users/zenith/Desktop/Kalvium/Sem%203/Work%20Integration%20[Urban%20Company%20Rebook]/Steve_Somavarapu-Urban_Company-Rebook-Squad112/docs/Urban%20Company%20rebook%20system%20PRD.md)
+**PRD Reference:** [Urban Company rebook system PRD.md](../docs/Urban%20Company%20rebook%20system%20PRD.md)
 
 ---
 
@@ -63,7 +63,7 @@ erDiagram
 ## 4. Prisma Schema Location
 
 The full production schema is maintained at:
-📄 [database/prisma/schema.prisma](file:///Users/zenith/Desktop/Kalvium/Sem%203/Work%20Integration%20[Urban%20Company%20Rebook]/Steve_Somavarapu-Urban_Company-Rebook-Squad112/database/prisma/schema.prisma)
+📄 [database/prisma/schema.prisma](prisma/schema.prisma)
 
 ### Key Indexes for Performance SLAs
 - **Booking History ($\le 2\text{s}$ SLA)**: `@@index([customerId, status, createdAt(sort: Desc)])`
@@ -90,7 +90,7 @@ export async function executeOneClickRebook(prisma: PrismaClient, input: {
 }) {
   return await prisma.$transaction(async (tx) => {
     // 1. Atomically acquire slot
-    const slot = await tx.professionalAvailability.update({
+    const claim = await tx.professionalAvailability.updateMany({
       where: {
         id: input.slotId,
         status: SlotStatus.AVAILABLE, // Fails if status changed concurrently
@@ -101,11 +101,15 @@ export async function executeOneClickRebook(prisma: PrismaClient, input: {
       },
     });
 
-    if (!slot) {
+    if (claim.count !== 1) {
       throw new Error('SLOT_ALREADY_TAKEN');
     }
 
-    // 2. Create child rebooking linked to parent
+    const slot = await tx.professionalAvailability.findUniqueOrThrow({
+      where: { id: input.slotId },
+    });
+
+    // 2. Create child rebooking linked to parent (using slotId as canonical relation)
     const booking = await tx.booking.create({
       data: {
         customerId: input.customerId,
@@ -121,12 +125,6 @@ export async function executeOneClickRebook(prisma: PrismaClient, input: {
         scheduledEndTime: slot.endTime,
         status: BookingStatus.CONFIRMED,
       },
-    });
-
-    // 3. Link booking to slot
-    await tx.professionalAvailability.update({
-      where: { id: slot.id },
-      data: { bookingId: booking.id },
     });
 
     return booking;
