@@ -67,8 +67,8 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // NextAuth relations
-  accounts            Account[]
-  sessions            Session[]
+  accounts Account[]
+  sessions Session[]
 
   // Domain relations
   addresses           Address[]
@@ -118,21 +118,21 @@ model VerificationToken {
 }
 
 model Address {
-  id          String   @id @default(cuid())
-  userId      String
-  street      String
-  city        String
-  state       String
-  postalCode  String
-  latitude    Float?
-  longitude   Float?
-  isDefault   Boolean  @default(false)
-  isDeleted   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String
+  street     String
+  city       String
+  state      String
+  postalCode String
+  latitude   Float?
+  longitude  Float?
+  isDefault  Boolean  @default(false)
+  isDeleted  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookings    Booking[]
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[]
 
   @@index([userId, isDeleted])
   @@index([userId, isDefault])
@@ -143,51 +143,51 @@ model Address {
 // ====================================================
 
 model ServiceCategory {
-  id            String                @id @default(cuid())
-  name          String                @unique
-  slug          String                @unique
-  description   String?
-  iconUrl       String?
-  createdAt     DateTime              @default(now())
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  iconUrl     String?
+  createdAt   DateTime @default(now())
 
   services      Service[]
   professionals ProfessionalProfile[]
 }
 
 model Service {
-  id              String          @id @default(cuid())
+  id              String   @id @default(cuid())
   categoryId      String
   name            String
   description     String?
-  basePrice       Decimal         @db.Decimal(10, 2)
-  durationMinutes Int             @default(60)
-  isActive        Boolean         @default(true)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  basePrice       Decimal  @db.Decimal(10, 2)
+  durationMinutes Int      @default(60)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  category        ServiceCategory @relation(fields: [categoryId], references: [id])
-  bookings        Booking[]
+  category ServiceCategory @relation(fields: [categoryId], references: [id])
+  bookings Booking[]
 
   @@index([categoryId, isActive])
 }
 
 model ProfessionalProfile {
-  id              String                     @id @default(cuid())
-  userId          String                     @unique
+  id              String   @id @default(cuid())
+  userId          String   @unique
   categoryId      String
   bio             String?
-  ratingAvg       Float                      @default(5.0)
-  ratingCount     Int                        @default(0)
-  experienceYears Int                        @default(1)
-  isAvailable     Boolean                    @default(true)
-  createdAt       DateTime                   @default(now())
-  updatedAt       DateTime                   @updatedAt
+  ratingAvg       Float    @default(5.0)
+  ratingCount     Int      @default(0)
+  experienceYears Int      @default(1)
+  isAvailable     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category        ServiceCategory            @relation(fields: [categoryId], references: [id])
-  availabilities  ProfessionalAvailability[]
-  bookings        Booking[]                  @relation("ProfessionalBookings")
-  reviews         Review[]                   @relation("ProfessionalReviews")
+  user           User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category       ServiceCategory            @relation(fields: [categoryId], references: [id])
+  availabilities ProfessionalAvailability[]
+  bookings       Booking[]                  @relation("ProfessionalBookings")
+  reviews        Review[]                   @relation("ProfessionalReviews")
 
   @@index([categoryId, isAvailable, ratingAvg])
 }
@@ -197,18 +197,18 @@ model ProfessionalProfile {
 // ====================================================
 
 model ProfessionalAvailability {
-  id             String              @id @default(cuid())
+  id             String     @id @default(cuid())
   professionalId String
-  date           DateTime            @db.Date
+  date           DateTime   @db.Date
   startTime      DateTime
   endTime        DateTime
-  status         SlotStatus          @default(AVAILABLE)
-  bookingId      String?             @unique
-  version        Int                 @default(0) // Optimistic concurrency control
+  status         SlotStatus @default(AVAILABLE)
+  version        Int        @default(0) // Optimistic concurrency control
 
-  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
-  booking        Booking?            @relation("SlotBooking")
+  professional ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  booking      Booking?            @relation("SlotBooking")
 
+  @@unique([id, professionalId])
   @@index([professionalId, date, status])
   @@index([professionalId, startTime, endTime, status])
 }
@@ -218,39 +218,40 @@ model ProfessionalAvailability {
 // ====================================================
 
 model Booking {
-  id                  String                    @id @default(cuid())
-  customerId          String
-  professionalId      String
-  serviceId           String
-  addressId           String
-  slotId              String?                   @unique
+  id             String  @id @default(cuid())
+  customerId     String
+  professionalId String
+  serviceId      String
+  addressId      String
+  slotId         String? @unique
 
-  status              BookingStatus             @default(PENDING)
-  bookingSource       BookingSource             @default(DIRECT)
-  parentBookingId     String?                   // Reference to previous booking if rebooked
+  status          BookingStatus @default(PENDING)
+  bookingSource   BookingSource @default(DIRECT)
+  parentBookingId String? // Reference to previous booking if rebooked
 
-  totalPrice          Decimal                   @db.Decimal(10, 2)
-  scheduledDate       DateTime                  @db.Date
-  scheduledStartTime  DateTime
-  scheduledEndTime    DateTime
+  totalPrice         Decimal  @db.Decimal(10, 2)
+  scheduledDate      DateTime @db.Date
+  scheduledStartTime DateTime
+  scheduledEndTime   DateTime
 
-  createdAt           DateTime                  @default(now())
-  updatedAt           DateTime                  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  customer            User                      @relation("CustomerBookings", fields: [customerId], references: [id])
-  professional        ProfessionalProfile       @relation("ProfessionalBookings", fields: [professionalId], references: [id])
-  service             Service                   @relation(fields: [serviceId], references: [id])
-  address             Address                   @relation(fields: [addressId], references: [id])
-  slot                ProfessionalAvailability? @relation("SlotBooking", fields: [slotId], references: [id])
+  customer     User                      @relation("CustomerBookings", fields: [customerId], references: [id])
+  professional ProfessionalProfile       @relation("ProfessionalBookings", fields: [professionalId], references: [id])
+  service      Service                   @relation(fields: [serviceId], references: [id])
+  address      Address                   @relation(fields: [addressId], references: [id])
+  slot         ProfessionalAvailability? @relation("SlotBooking", fields: [slotId, professionalId], references: [id, professionalId], onDelete: Restrict)
 
   // Rebooking Self-Relations for lineage tracking
-  parentBooking       Booking?                  @relation("RebookLineage", fields: [parentBookingId], references: [id])
-  childBookings       Booking[]                 @relation("RebookLineage")
+  parentBooking Booking?  @relation("RebookLineage", fields: [parentBookingId], references: [id])
+  childBookings Booking[] @relation("RebookLineage")
 
-  payment             Payment?
-  review              Review?
+  payment Payment?
+  review  Review?
 
   // High Performance composite indexes per PRD SLAs
+  @@unique([slotId, professionalId])
   @@index([customerId, status, createdAt(sort: Desc)])
   @@index([professionalId, scheduledDate, status])
   @@index([parentBookingId])
@@ -271,23 +272,23 @@ model Payment {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([status])
 }
 
 model Review {
-  id             String              @id @default(cuid())
-  bookingId      String              @unique
+  id             String   @id @default(cuid())
+  bookingId      String   @unique
   customerId     String
   professionalId String
-  rating         Int                 @default(5)
+  rating         Int      @default(5)
   comment        String?
-  createdAt      DateTime            @default(now())
+  createdAt      DateTime @default(now())
 
-  booking        Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  customer       User                @relation("CustomerReviews", fields: [customerId], references: [id])
-  professional   ProfessionalProfile @relation("ProfessionalReviews", fields: [professionalId], references: [id])
+  booking      Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer     User                @relation("CustomerReviews", fields: [customerId], references: [id])
+  professional ProfessionalProfile @relation("ProfessionalReviews", fields: [professionalId], references: [id])
 
   @@index([professionalId, rating])
 }
