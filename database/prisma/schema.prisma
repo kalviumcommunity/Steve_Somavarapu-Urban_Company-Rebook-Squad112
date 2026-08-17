@@ -1,0 +1,294 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ====================================================
+// ENUMS
+// ====================================================
+
+enum Role {
+  CUSTOMER
+  PROFESSIONAL
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingSource {
+  DIRECT
+  REBOOK
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  BLOCKED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  UPI
+  NETBANKING
+  WALLET
+  CASH
+}
+
+// ====================================================
+// AUTHENTICATION & USERS (NextAuth / Auth.js Compatible)
+// ====================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  phone         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth relations
+  accounts Account[]
+  sessions Session[]
+
+  // Domain relations
+  addresses           Address[]
+  customerBookings    Booking[]            @relation("CustomerBookings")
+  professionalProfile ProfessionalProfile?
+  reviews             Review[]             @relation("CustomerReviews")
+
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  userId     String
+  street     String
+  city       String
+  state      String
+  postalCode String
+  latitude   Float?
+  longitude  Float?
+  isDefault  Boolean  @default(false)
+  isDeleted  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([userId, isDeleted])
+  @@index([userId, isDefault])
+}
+
+// ====================================================
+// SERVICES & SERVICE PROFESSIONALS
+// ====================================================
+
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  iconUrl     String?
+  createdAt   DateTime @default(now())
+
+  services      Service[]
+  professionals ProfessionalProfile[]
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  categoryId      String
+  name            String
+  description     String?
+  basePrice       Decimal  @db.Decimal(10, 2)
+  durationMinutes Int      @default(60)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  category ServiceCategory @relation(fields: [categoryId], references: [id])
+  bookings Booking[]
+
+  @@index([categoryId, isActive])
+}
+
+model ProfessionalProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  categoryId      String
+  bio             String?
+  ratingAvg       Float    @default(5.0)
+  ratingCount     Int      @default(0)
+  experienceYears Int      @default(1)
+  isAvailable     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user           User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category       ServiceCategory            @relation(fields: [categoryId], references: [id])
+  availabilities ProfessionalAvailability[]
+  bookings       Booking[]                  @relation("ProfessionalBookings")
+  reviews        Review[]                   @relation("ProfessionalReviews")
+
+  @@index([categoryId, isAvailable, ratingAvg])
+}
+
+// ====================================================
+// CALENDAR & AVAILABILITY SLOTS
+// ====================================================
+
+model ProfessionalAvailability {
+  id             String     @id @default(cuid())
+  professionalId String
+  date           DateTime   @db.Date
+  startTime      DateTime
+  endTime        DateTime
+  status         SlotStatus @default(AVAILABLE)
+  version        Int        @default(0) // Optimistic concurrency control
+
+  professional ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  booking      Booking?            @relation("SlotBooking")
+
+  @@unique([id, professionalId])
+  @@index([professionalId, date, status])
+  @@index([professionalId, startTime, endTime, status])
+}
+
+// ====================================================
+// BOOKINGS (One-Click Rebooking Core)
+// ====================================================
+
+model Booking {
+  id             String  @id @default(cuid())
+  customerId     String
+  professionalId String
+  serviceId      String
+  addressId      String
+  slotId         String? @unique
+
+  status          BookingStatus @default(PENDING)
+  bookingSource   BookingSource @default(DIRECT)
+  parentBookingId String? // Reference to previous booking if rebooked
+
+  totalPrice         Decimal  @db.Decimal(10, 2)
+  scheduledDate      DateTime @db.Date
+  scheduledStartTime DateTime
+  scheduledEndTime   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer     User                      @relation("CustomerBookings", fields: [customerId], references: [id])
+  professional ProfessionalProfile       @relation("ProfessionalBookings", fields: [professionalId], references: [id])
+  service      Service                   @relation(fields: [serviceId], references: [id])
+  address      Address                   @relation(fields: [addressId], references: [id])
+  slot         ProfessionalAvailability? @relation("SlotBooking", fields: [slotId, professionalId], references: [id, professionalId], onDelete: Restrict)
+
+  // Rebooking Self-Relations for lineage tracking
+  parentBooking Booking?  @relation("RebookLineage", fields: [parentBookingId], references: [id])
+  childBookings Booking[] @relation("RebookLineage")
+
+  payment Payment?
+  review  Review?
+
+  // High Performance composite indexes per PRD SLAs
+  @@unique([slotId, professionalId])
+  @@index([customerId, status, createdAt(sort: Desc)])
+  @@index([professionalId, scheduledDate, status])
+  @@index([parentBookingId])
+  @@index([serviceId])
+}
+
+// ====================================================
+// PAYMENTS & REVIEWS
+// ====================================================
+
+model Payment {
+  id            String        @id @default(cuid())
+  bookingId     String        @unique
+  amount        Decimal       @db.Decimal(10, 2)
+  status        PaymentStatus @default(PENDING)
+  method        PaymentMethod @default(CARD)
+  transactionId String?       @unique
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model Review {
+  id             String   @id @default(cuid())
+  bookingId      String   @unique
+  customerId     String
+  professionalId String
+  rating         Int      @default(5)
+  comment        String?
+  createdAt      DateTime @default(now())
+
+  booking      Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer     User                @relation("CustomerReviews", fields: [customerId], references: [id])
+  professional ProfessionalProfile @relation("ProfessionalReviews", fields: [professionalId], references: [id])
+
+  @@index([professionalId, rating])
+}
