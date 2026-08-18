@@ -6,6 +6,11 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seeding for Urban Company Rebook...');
 
+  const testFirebaseUid = process.env.TEST_FIREBASE_UID?.trim();
+  if (!testFirebaseUid) {
+    throw new Error('TEST_FIREBASE_UID environment variable is required to seed customer user.');
+  }
+
   const allowDestructiveSeed = process.env.ALLOW_DESTRUCTIVE_SEED === 'true' || process.argv.includes('--force');
 
   if (allowDestructiveSeed) {
@@ -81,6 +86,7 @@ async function main() {
   // Customer Persona: Suresh (from PRD)
   const customerSuresh = await prisma.user.create({
     data: {
+      firebaseUid: testFirebaseUid,
       name: 'Suresh Kumar',
       email: 'suresh.kumar@example.com',
       phone: '+919876543210',
@@ -88,6 +94,9 @@ async function main() {
       image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
     },
   });
+
+
+
 
   // Customer Suresh's Saved Address
   const sureshAddress = await prisma.address.create({
