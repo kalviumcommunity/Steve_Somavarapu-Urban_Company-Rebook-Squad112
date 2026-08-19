@@ -12,7 +12,10 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node tests/customer.test.js",
+    "test": "node tests/customer.test.js && node tests/parallelFetch.test.js && node tests/booking.test.js",
+    "test:customer": "node tests/customer.test.js",
+    "test:parallel": "node tests/parallelFetch.test.js",
+    "test:booking": "node tests/booking.test.js",
     "prisma:generate": "prisma generate",
     "user:create": "node scripts/create-firebase-user.js"
   },

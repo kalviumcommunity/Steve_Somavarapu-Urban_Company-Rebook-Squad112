@@ -99,11 +99,7 @@ export default function LoginPage() {
           <p className="login-legal-statement">
             Continuing with Google leads to accepting of the{' '}
             <Link to="/terms" className="legal-link">
-              Terms
-            </Link>{' '}
-            and{' '}
-            <Link to="/terms" className="legal-link">
-              Conditions
+              Terms and Conditions
             </Link>
             .
           </p>

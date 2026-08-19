@@ -6,27 +6,30 @@ const firebaseConfig = require("../src/config/firebase");
 const { __setMockCustomer, __clearMockCustomers, hasMockCustomer } = require("../src/services/customer.service");
 const assert = require("assert");
 
-// Ensure firebaseAuth is populated or mocked for test environment
-let firebaseAuth = firebaseConfig.getFirebaseAuth();
+// Save original getFirebaseAuth and install shared mock unconditionally before requiring app
+const originalGetFirebaseAuth = firebaseConfig.getFirebaseAuth;
 
-if (!firebaseAuth) {
-  const mockAuth = {
-    verifyIdToken: async (token) => {
-      if (token === "valid-test-token-404") {
-        return { uid: "non-existent-user-123", email: "test404@example.com" };
-      }
-      if (token === "valid-test-token-200") {
-        return { uid: "matching-user-456", email: "test200@example.com" };
-      }
-      if (token === "valid-test-token-prototype") {
-        return { uid: "toString", email: "tostring@example.com" };
-      }
-      throw new Error("Invalid token");
-    },
-  };
-  firebaseConfig.getFirebaseAuth = () => mockAuth;
-  firebaseAuth = mockAuth;
-}
+const mockAuth = {
+  verifyIdToken: async (token) => {
+    if (token === "valid-test-token-404") {
+      return { uid: "non-existent-user-123", email: "test404@example.com" };
+    }
+    if (token === "valid-test-token-200") {
+      return { uid: "matching-user-456", email: "test200@example.com" };
+    }
+    if (token === "valid-test-token-toString") {
+      return { uid: "toString", email: "tostring@example.com" };
+    }
+    if (token === "valid-test-token-valueOf") {
+      return { uid: "valueOf", email: "valueof@example.com" };
+    }
+    if (token === "valid-test-token-proto") {
+      return { uid: "__proto__", email: "proto@example.com" };
+    }
+    throw new Error("Invalid token");
+  },
+};
+firebaseConfig.getFirebaseAuth = () => mockAuth;
 
 const app = require("../src/app");
 
@@ -50,20 +53,6 @@ async function runTests() {
 
     // Test Case 2: GET /api/customer/profile with valid token, no matching customer row -> 404
     {
-      const origVerify = firebaseAuth.verifyIdToken.bind(firebaseAuth);
-      firebaseAuth.verifyIdToken = async (token) => {
-        if (token === "valid-test-token-404") {
-          return { uid: "non-existent-user-123", email: "test404@example.com" };
-        }
-        if (token === "valid-test-token-200") {
-          return { uid: "matching-user-456", email: "test200@example.com" };
-        }
-        if (token === "valid-test-token-prototype") {
-          return { uid: "toString", email: "tostring@example.com" };
-        }
-        return origVerify(token);
-      };
-
       __setMockCustomer("non-existent-user-123", null);
       const res404 = await fetch(`${baseUrl}/api/customer/profile`, {
         headers: { Authorization: "Bearer valid-test-token-404" },
@@ -75,15 +64,22 @@ async function runTests() {
       console.log("✓ Pass 2: GET /api/customer/profile with valid token & missing DB row -> 404");
 
       // Test Case 3: Verify null prototype own-property registry safety for "toString", "valueOf", "__proto__"
-      __setMockCustomer("toString", null);
-      const resProto = await fetch(`${baseUrl}/api/customer/profile`, {
-        headers: { Authorization: "Bearer valid-test-token-prototype" },
-      });
-      const bodyProto = await resProto.json();
-      assert.strictEqual(resProto.status, 404);
-      assert.strictEqual(bodyProto.error.code, "CUSTOMER_NOT_FOUND");
-      assert.strictEqual(Object.prototype.hasOwnProperty.call(Object.create(null), "toString"), false);
-      console.log("✓ Pass 3: Null prototype own-property registry prevents inherited property collision");
+      const prototypeKeys = [
+        { uid: "toString", token: "valid-test-token-toString" },
+        { uid: "valueOf", token: "valid-test-token-valueOf" },
+        { uid: "__proto__", token: "valid-test-token-proto" },
+      ];
+
+      for (const { uid, token } of prototypeKeys) {
+        __setMockCustomer(uid, null);
+        const resProto = await fetch(`${baseUrl}/api/customer/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const bodyProto = await resProto.json();
+        assert.strictEqual(resProto.status, 404, `Expected 404 for UID '${uid}'`);
+        assert.strictEqual(bodyProto.error.code, "CUSTOMER_NOT_FOUND");
+      }
+      console.log("✓ Pass 3: Null prototype own-property registry safely handles prototype property names");
 
       // Test Case 4: GET /api/customer/profile with valid token & matching row -> 200
       __setMockCustomer("matching-user-456", {
@@ -118,14 +114,14 @@ async function runTests() {
       assert.strictEqual(body200.customer.addresses.length, 1);
       console.log("✓ Pass 4: GET /api/customer/profile with valid token & matching DB row -> 200 Profile");
 
-      // Restore
-      firebaseAuth.verifyIdToken = origVerify;
       __clearMockCustomers();
     }
 
     console.log("\n✅ ALL TEST CASES PASSED SUCCESSFULLY!");
   } finally {
-    server.close();
+    __clearMockCustomers();
+    firebaseConfig.getFirebaseAuth = originalGetFirebaseAuth;
+    await new Promise((resolve) => server.close(resolve));
   }
 }
 
