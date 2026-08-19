@@ -37,7 +37,7 @@ try {
 
 let prisma = null;
 
-if (PrismaClient) {
+if (PrismaClient && !isMockTestEnv) {
   try {
     if (process.env.NODE_ENV === "production") {
       prisma = new PrismaClient();
