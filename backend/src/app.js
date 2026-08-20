@@ -4,6 +4,7 @@ const healthRoutes = require("./routes/health.routes");
 const authRoutes = require("./routes/auth.routes");
 const customerRoutes = require("./routes/customer.routes");
 const bookingRoutes = require("./routes/booking.routes");
+const professionalRoutes = require("./routes/professional.routes");
 const { notFoundHandler, errorHandler } = require("./middleware/error.middleware");
 const { initializeFirebase } = require("./config/firebase");
 
@@ -37,6 +38,8 @@ app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/customer", customerRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/professional", professionalRoutes);
+app.use("/api/professionals", professionalRoutes);
 
 
 // Error handling middleware
