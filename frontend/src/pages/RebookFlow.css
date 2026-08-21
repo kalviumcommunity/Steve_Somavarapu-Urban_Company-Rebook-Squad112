@@ -1,0 +1,434 @@
+/* ============================================================
+   RebookFlow.css — Styles for Rebook Flow Pages:
+   1. Customer Details (/booking/details)
+   2. Select Slot (/booking/slot)
+   3. Booking Confirmed (/booking/confirmed)
+   ============================================================ */
+
+/* ---------- Shared Screen Header ---------- */
+.screen-header {
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.screen-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.screen-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.screen-header-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.screen-header-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 400;
+  margin: 0;
+  letter-spacing: -0.1px;
+}
+
+/* Header buttons (Back & Menu) */
+.btn-header-action {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #eaebf0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.btn-header-action:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #111827;
+  transform: translateY(-1px);
+}
+
+.btn-header-action:active {
+  transform: translateY(0);
+}
+
+.btn-header-action:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* ---------- Common Card Section ---------- */
+.card-section {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow:
+    0 4px 20px -2px rgba(0, 0, 0, 0.03),
+    0 1px 3px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+}
+
+.card-section-heading {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin: 0 0 16px 0;
+}
+
+/* ---------- Customer Details Card ---------- */
+.customer-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.customer-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.customer-info-label {
+  color: #64748b;
+  font-weight: 400;
+}
+
+.customer-info-value {
+  font-weight: 600;
+  color: #0f172a;
+  text-align: right;
+  letter-spacing: -0.1px;
+}
+
+/* ---------- Booking History Card ---------- */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.history-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background-color: #eff0fe;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.history-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.history-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.history-subtitle {
+  font-size: 12.5px;
+  color: #64748b;
+  font-weight: 400;
+  margin: 0;
+}
+
+/* ---------- Date Selection Card (/booking/slot) ---------- */
+.date-selector-card {
+  padding: 16px 20px;
+}
+
+.date-card-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.date-card-icon-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background-color: #eff0fe;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.date-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.date-card-subtitle {
+  font-size: 12.5px;
+  color: #64748b;
+  font-weight: 400;
+  margin: 0;
+}
+
+/* ---------- Available Times & Slot Picker ---------- */
+.slot-picker-section {
+  margin-top: 8px;
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.slot-button {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.slot-button:hover:not(.selected) {
+  background-color: #fafafa;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.slot-button.selected {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+  transform: translateY(-1px);
+}
+
+.slot-button:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* ---------- Disabled Primary Button ---------- */
+.btn-primary-rebook:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+  background-color: #4f46e5;
+}
+
+/* ---------- Confirmation Page Header ---------- */
+.confirmation-header-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 16px;
+  margin-bottom: 28px;
+}
+
+.success-badge-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: #dcfce7;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.15);
+  animation: success-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes success-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.confirmation-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.4px;
+  margin: 0 0 6px 0;
+}
+
+.confirmation-subtitle {
+  font-size: 14.5px;
+  color: #64748b;
+  font-weight: 400;
+  margin: 0;
+}
+
+/* ---------- New Appointment Details Card ---------- */
+.appointment-rows-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.appointment-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.appointment-icon-wrapper {
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.appointment-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.appointment-label {
+  font-size: 12.5px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.appointment-value {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.1px;
+}
+
+/* ---------- Start Over (Secondary/Outline Button) ---------- */
+.btn-secondary-outline {
+  width: 100%;
+  padding: 16px 20px;
+  background-color: #ffffff;
+  color: #0f172a;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.btn-secondary-outline:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.btn-secondary-outline:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.btn-secondary-outline:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* ---------- Responsive Adjustments ---------- */
+@media (max-width: 480px) {
+  .screen-header-title {
+    font-size: 22px;
+  }
+
+  .confirmation-title {
+    font-size: 22px;
+  }
+
+  .card-section {
+    padding: 18px 16px;
+    border-radius: 20px;
+  }
+
+  .slot-button {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 375px) {
+  .screen-header-title {
+    font-size: 20px;
+  }
+
+  .confirmation-title {
+    font-size: 20px;
+  }
+
+  .slots-grid {
+    gap: 8px;
+  }
+
+  .slot-button {
+    padding: 11px 10px;
+    font-size: 13.5px;
+  }
+}
