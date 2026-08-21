@@ -33,7 +33,7 @@ export default function LoginPage() {
     setIsGoogleLoading(true);
     try {
       await loginWithGoogle();
-      navigate('/');
+      navigate('/booking');
     } catch (err) {
       if (err) setGeneralError(err.message);
     } finally {
