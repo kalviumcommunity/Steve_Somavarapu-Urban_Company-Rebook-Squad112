@@ -34,11 +34,9 @@
 @keyframes past-service-fade-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -73,7 +71,12 @@
   letter-spacing: -0.1px;
 }
 
-/* Three dots more options button */
+/* Three dots more options button & dropdown menu */
+.header-menu-container {
+  position: relative;
+}
+
+.btn-header-menu,
 .btn-more-options {
   width: 38px;
   height: 38px;
@@ -90,6 +93,7 @@
   flex-shrink: 0;
 }
 
+.btn-header-menu:hover,
 .btn-more-options:hover {
   background: #f3f4f6;
   border-color: #d1d5db;
@@ -97,13 +101,74 @@
   transform: translateY(-1px);
 }
 
+.btn-header-menu:active,
 .btn-more-options:active {
   transform: translateY(0);
 }
 
+.btn-header-menu:focus-visible,
 .btn-more-options:focus-visible {
   outline: 2px solid #4f46e5;
   outline-offset: 2px;
+}
+
+.header-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 140px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  padding: 6px;
+  z-index: 100;
+  animation: fadeInDropdown 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInDropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.header-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.header-dropdown-item:hover {
+  background-color: #f8fafc;
+}
+
+.dropdown-item-signout {
+  color: #dc2626;
+}
+
+.dropdown-item-signout:hover {
+  background-color: #fef2f2;
+  color: #b91c1c;
 }
 
 /* ---------- Content Section ---------- */
@@ -150,9 +215,15 @@
   color: #4f46e5;
 }
 
-.badge-status {
+.badge-status,
+.badge-status-completed {
   background-color: #dcfce7;
   color: #059669;
+}
+
+.badge-status-confirmed {
+  background-color: #e0e7ff;
+  color: #4338ca;
 }
 
 /* Service Info */
@@ -222,6 +293,24 @@
   letter-spacing: -0.1px;
 }
 
+.card-detail-clickable {
+  cursor: pointer;
+  padding: 6px 8px;
+  margin: -6px -8px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.card-detail-clickable:hover {
+  background-color: #f1f5f9;
+}
+
+.card-detail-clickable:hover .detail-value-clickable {
+  color: #6c63ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .price-value {
   font-weight: 700;
   color: #0f172a;
@@ -255,6 +344,174 @@
   font-size: 11px;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+/* Card Action Area (Pushed into Service Cards) */
+.card-action-row {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-card-rebook {
+  width: 100%;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #6c63ff 0%, #4f46e5 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.btn-card-rebook:hover {
+  background: linear-gradient(135deg, #5b52f5 0%, #4338ca 100%);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-card-rebook:active {
+  transform: translateY(0);
+}
+
+.btn-card-cancel {
+  width: 100%;
+  padding: 13px 18px;
+  background-color: #ffffff;
+  color: #dc2626;
+  border: 1.5px solid #fecaca;
+  border-radius: 14px;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.btn-card-cancel:hover {
+  background-color: #fef2f2;
+  border-color: #f87171;
+  color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.btn-card-cancel:active {
+  transform: translateY(0);
+}
+
+/* Past Services Cards List */
+.past-services-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+/* ---------- Pagination Controls ---------- */
+.pagination-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.pagination-info {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn-pagination-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 12px;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btn-pagination-nav:hover:not(:disabled) {
+  background-color: #eff2fe;
+  border-color: #6c63ff;
+  color: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.btn-pagination-nav:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pagination-page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 6px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.pagination-page-btn:hover:not(.active) {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.pagination-page-btn.active {
+  background: linear-gradient(135deg, #6c63ff 0%, #4f46e5 100%);
+  color: #ffffff;
+  border-color: #4f46e5;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
 }
 
 /* ---------- Rebooking Information Banner ---------- */

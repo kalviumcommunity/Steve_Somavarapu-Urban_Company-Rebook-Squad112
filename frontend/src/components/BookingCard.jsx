@@ -24,16 +24,19 @@ const PriceIcon = () => (
   </svg>
 );
 
-export default function BookingCard({ booking }) {
+export default function BookingCard({ booking, onDateClick, onRebook, onCancel }) {
   const [avatarError, setAvatarError] = useState(false);
-  const { category, status, service, description, date, time, provider, price } = booking;
+  const { id, category, status, service, description, date, time, provider, price } = booking;
+  const isCompleted = status?.toLowerCase() === 'completed';
 
   return (
-    <article className="booking-card" aria-label={`Previous service details for ${service}`}>
+    <article className="booking-card" aria-label={`Service details for ${service}`}>
       {/* Top Badges */}
       <div className="card-badge-row">
         <span className="badge badge-category">{category}</span>
-        <span className="badge badge-status">{status}</span>
+        <span className={`badge ${isCompleted ? 'badge-status-completed' : 'badge-status-confirmed'}`}>
+          {status}
+        </span>
       </div>
 
       {/* Service Header */}
@@ -44,13 +47,27 @@ export default function BookingCard({ booking }) {
 
       {/* Booking Details List */}
       <div className="card-details-list">
-        {/* Date & Time */}
-        <div className="card-detail-item">
+        {/* Date & Time (Clickable when rebooking) */}
+        <div
+          className={`card-detail-item ${isCompleted && onDateClick ? 'card-detail-clickable' : ''}`}
+          onClick={isCompleted && onDateClick ? () => onDateClick(booking) : undefined}
+          role={isCompleted && onDateClick ? 'button' : undefined}
+          tabIndex={isCompleted && onDateClick ? 0 : undefined}
+          onKeyDown={(e) => {
+            if (isCompleted && onDateClick && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault();
+              onDateClick(booking);
+            }
+          }}
+          aria-label={isCompleted && onDateClick ? 'Click to select rebooking date' : undefined}
+        >
           <div className="detail-label-group">
             <span className="detail-icon" aria-hidden="true"><CalendarIcon /></span>
             <span className="detail-label">Date & time</span>
           </div>
-          <span className="detail-value">{date} • {time}</span>
+          <span className={`detail-value ${isCompleted && onDateClick ? 'detail-value-clickable' : ''}`}>
+            {date} • {time}
+          </span>
         </div>
 
         {/* Provider */}
@@ -60,7 +77,7 @@ export default function BookingCard({ booking }) {
             <span className="detail-label">Provider</span>
           </div>
           <div className="provider-value-group">
-            {!avatarError && provider.avatar ? (
+            {!avatarError && provider?.avatar ? (
               <img
                 src={provider.avatar}
                 alt=""
@@ -69,10 +86,10 @@ export default function BookingCard({ booking }) {
               />
             ) : (
               <span className="provider-avatar-fallback" aria-hidden="true">
-                {provider.name?.charAt(0) || 'P'}
+                {provider?.name?.charAt(0) || 'P'}
               </span>
             )}
-            <span className="detail-value">{provider.name}</span>
+            <span className="detail-value">{provider?.name}</span>
           </div>
         </div>
 
@@ -84,6 +101,29 @@ export default function BookingCard({ booking }) {
           </div>
           <span className="detail-value price-value">{price}</span>
         </div>
+      </div>
+
+      {/* Card Action Button Section (Pushed into the service card) */}
+      <div className="card-action-row">
+        {isCompleted ? (
+          <button
+            id={`btn-rebook-${id || 'service'}`}
+            type="button"
+            className="btn-card-rebook"
+            onClick={() => onRebook && onRebook(booking)}
+          >
+            Rebook service
+          </button>
+        ) : (
+          <button
+            id={`btn-cancel-${id || 'service'}`}
+            type="button"
+            className="btn-card-cancel"
+            onClick={() => onCancel && onCancel(id)}
+          >
+            Cancel service
+          </button>
+        )}
       </div>
     </article>
   );

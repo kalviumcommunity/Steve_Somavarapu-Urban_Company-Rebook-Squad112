@@ -45,10 +45,10 @@ export default function LoginPage() {
     <main className="login-page" role="main">
       <div className="login-card" role="region" aria-label="Sign in to Urban Care">
         
-        {/* 1. Large Brand Title (No logo icon) */}
+        {/* 1. Large Brand Title */}
         <h1 className="login-title">Urban Care</h1>
 
-        {/* General error banner if OAuth fails or is unconfigured */}
+        {/* General error banner if OAuth fails */}
         {generalError && (
           <div className="login-error-banner" role="alert" aria-live="assertive">
             <AlertIcon />
@@ -97,7 +97,7 @@ export default function LoginPage() {
         {/* 4. Terms & Privacy Statement */}
         <div className="login-legal-container">
           <p className="login-legal-statement">
-            Continuing with Google leads to accepting of the{' '}
+            Continuing with Google leads to accepting the{' '}
             <Link to="/terms" className="legal-link">
               Terms and Conditions
             </Link>
