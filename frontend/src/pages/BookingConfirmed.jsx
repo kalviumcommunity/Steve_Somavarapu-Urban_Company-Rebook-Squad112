@@ -45,15 +45,15 @@ export default function BookingConfirmed() {
           />
         </section>
 
-        {/* Bottom Start Over Button */}
+        {/* Bottom Button */}
         <footer className="past-service-footer">
           <button
             id="btn-start-over"
             type="button"
-            className="btn-secondary-outline"
+            className="btn-primary-rebook"
             onClick={handleStartOver}
           >
-            Start over
+            View my bookings
           </button>
         </footer>
       </main>
