@@ -74,6 +74,32 @@ function __clearMockProfessionals() {
 }
 
 /**
+ * Atomically checks and reserves a mock slot if available.
+ * @param {object} params
+ * @param {string} params.professionalId
+ * @param {string} params.date
+ * @param {string} params.startTime
+ * @param {string} params.endTime
+ * @returns {boolean} True if successfully reserved, false if unavailable or not found
+ */
+function __reserveMockSlot({ professionalId, date, startTime, endTime }) {
+  const key = `${professionalId}:${date}`;
+  const slots = mockAvailabilities[key];
+  if (!Array.isArray(slots)) return false;
+
+  const targetSlot = slots.find(
+    (s) => formatSlotTime(s.startTime) === startTime && formatSlotTime(s.endTime) === endTime
+  );
+
+  if (!targetSlot || targetSlot.status !== "AVAILABLE") {
+    return false;
+  }
+
+  targetSlot.status = "BOOKED";
+  return true;
+}
+
+/**
  * Retrieves time slots and availability status for a professional on a given date.
  * 
  * @param {object} params
@@ -163,4 +189,5 @@ module.exports = {
   __setMockProfessional,
   __setMockAvailability,
   __clearMockProfessionals,
+  __reserveMockSlot,
 };
