@@ -1,6 +1,10 @@
-const { getFirebaseAuth } = require("../config/firebase");
+const { verifyToken } = require("../utils/jwt");
 
-async function requireAuth(req, res, next) {
+/**
+ * Express middleware to enforce JWT authentication.
+ * Extracts Bearer token from Authorization header and attaches decoded user to req.user.
+ */
+function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization || req.headers.Authorization;
 
   if (!authHeader) {
@@ -37,37 +41,25 @@ async function requireAuth(req, res, next) {
     });
   }
 
-  const firebaseAuth = getFirebaseAuth();
-
-  if (!firebaseAuth) {
-    return res.status(401).json({
-      success: false,
-      error: {
-        code: "UNAUTHORIZED",
-        message: "Firebase authentication service is uninitialized or unconfigured.",
-      },
-    });
-  }
-
   try {
-    const decodedToken = await firebaseAuth.verifyIdToken(token);
+    const decoded = verifyToken(token);
 
     req.user = {
-      uid: decodedToken.uid,
-      email: decodedToken.email || null,
-      emailVerified: decodedToken.email_verified || false,
-      name: decodedToken.name || null,
-      picture: decodedToken.picture || null,
+      id: decoded.id || decoded.userId || decoded.uid,
+      uid: decoded.id || decoded.userId || decoded.uid, // backwards-compatible alias
+      email: decoded.email || null,
+      name: decoded.name || null,
+      role: decoded.role || "CUSTOMER",
     };
 
     return next();
   } catch (error) {
-    // Return clean 401 without exposing raw internal Firebase stack traces
+    const isExpired = error.name === "TokenExpiredError";
     return res.status(401).json({
       success: false,
       error: {
         code: "UNAUTHORIZED",
-        message: "Invalid or expired token.",
+        message: isExpired ? "Token has expired. Please sign in again." : "Invalid authentication token.",
       },
     });
   }

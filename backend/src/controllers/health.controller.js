@@ -1,4 +1,4 @@
-const { getFirebaseAuth } = require("../config/firebase");
+const prisma = require("../config/prisma");
 
 function getHealth(req, res) {
   return res.status(200).json({
@@ -8,21 +8,10 @@ function getHealth(req, res) {
 }
 
 function getReadiness(req, res) {
-  const firebaseAuth = getFirebaseAuth();
-
-  if (!firebaseAuth) {
-    return res.status(503).json({
-      success: false,
-      error: {
-        code: "SERVICE_UNAVAILABLE",
-        message: "Firebase Authentication service is uninitialized or unconfigured.",
-      },
-    });
-  }
-
   return res.status(200).json({
     success: true,
     message: "Service is ready",
+    auth: "JWT",
   });
 }
 

@@ -170,9 +170,15 @@ async function findCompletedBookingsByCustomer({ firebaseUid, page = 1, limit = 
     throw new Error("Prisma client is not initialized.");
   }
 
-  // 1. Resolve User ID from Firebase UID
+  // 1. Resolve User ID from User Identifier
   const user = await prisma.user.findFirst({
-    where: { firebaseUid },
+    where: {
+      OR: [
+        { id: firebaseUid },
+        { email: firebaseUid },
+        { firebaseUid: firebaseUid },
+      ],
+    },
     select: { id: true },
   });
 

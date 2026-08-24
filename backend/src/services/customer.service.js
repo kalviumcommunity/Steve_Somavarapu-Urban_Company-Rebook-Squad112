@@ -4,33 +4,33 @@ const prisma = require("../config/prisma");
 let mockCustomers = Object.create(null);
 
 /**
- * Checks if a mock customer is explicitly registered for a given Firebase UID.
- * @param {string} firebaseUid 
+ * Checks if a mock customer is explicitly registered for a given user identifier.
+ * @param {string} userId 
  * @returns {boolean}
  */
-function hasMockCustomer(firebaseUid) {
-  return typeof firebaseUid === "string" && Object.prototype.hasOwnProperty.call(mockCustomers, firebaseUid);
+function hasMockCustomer(userId) {
+  return typeof userId === "string" && Object.prototype.hasOwnProperty.call(mockCustomers, userId);
 }
 
 /**
  * Registers a mock customer for testing purposes.
  * Pass null as customerData to explicitly simulate a missing customer in test mode.
- * @param {string} firebaseUid 
+ * @param {string} userId 
  * @param {object|null} customerData 
  */
-function __setMockCustomer(firebaseUid, customerData) {
-  if (typeof firebaseUid === "string") {
-    mockCustomers[firebaseUid] = customerData;
+function __setMockCustomer(userId, customerData) {
+  if (typeof userId === "string") {
+    mockCustomers[userId] = customerData;
   }
 }
 
 /**
  * Deletes a single mock customer override.
- * @param {string} firebaseUid 
+ * @param {string} userId 
  */
-function __deleteMockCustomer(firebaseUid) {
-  if (typeof firebaseUid === "string") {
-    delete mockCustomers[firebaseUid];
+function __deleteMockCustomer(userId) {
+  if (typeof userId === "string") {
+    delete mockCustomers[userId];
   }
 }
 
@@ -42,17 +42,17 @@ function __clearMockCustomers() {
 }
 
 /**
- * Finds customer profile by Firebase UID.
+ * Finds customer profile by user ID (or legacy Firebase UID / email).
  * 
- * @param {string} firebaseUid 
+ * @param {string} userId 
  * @returns {Promise<object|null>} Customer object or null if not found
  */
-async function findByFirebaseUid(firebaseUid) {
-  if (!firebaseUid) return null;
+async function findById(userId) {
+  if (!userId) return null;
 
   // Check own-key mock registry first (only active when explicitly configured in tests)
-  if (hasMockCustomer(firebaseUid)) {
-    return mockCustomers[firebaseUid];
+  if (hasMockCustomer(userId)) {
+    return mockCustomers[userId];
   }
 
   if (!prisma) {
@@ -63,7 +63,13 @@ async function findByFirebaseUid(firebaseUid) {
   }
 
   const customer = await prisma.user.findFirst({
-    where: { firebaseUid },
+    where: {
+      OR: [
+        { id: userId },
+        { email: userId },
+        { firebaseUid: userId },
+      ],
+    },
     include: { addresses: true },
   });
 
@@ -73,7 +79,7 @@ async function findByFirebaseUid(firebaseUid) {
 
   return {
     id: customer.id,
-    firebaseUid: customer.firebaseUid || firebaseUid,
+    firebaseUid: customer.firebaseUid || customer.id,
     name: customer.name || "",
     email: customer.email || "",
     phone: customer.phone || "",
@@ -91,46 +97,54 @@ async function findByFirebaseUid(firebaseUid) {
 }
 
 /**
- * Creates or updates a customer profile (useful when logging in via Google Auth for the first time).
+ * Alias for findById for backward compatibility
+ */
+async function findByFirebaseUid(userId) {
+  return findById(userId);
+}
+
+/**
+ * Creates or updates a customer profile.
  * 
  * @param {object} profileData 
  * @returns {Promise<object>} Created or updated customer profile
  */
-async function upsertCustomerProfile({ firebaseUid, name, email, phone, image }) {
-  if (!firebaseUid) throw new Error("firebaseUid is required for upserting customer profile");
+async function upsertCustomerProfile({ id, userId, firebaseUid, name, email, phone, image }) {
+  const targetId = id || userId || firebaseUid;
+  if (!targetId) throw new Error("User identifier is required for upserting customer profile");
 
-  if (hasMockCustomer(firebaseUid)) {
-    const existing = mockCustomers[firebaseUid];
+  if (hasMockCustomer(targetId)) {
+    const existing = mockCustomers[targetId];
     const updated = {
-      id: existing?.id || `cust_${Date.now()}`,
-      firebaseUid,
+      id: existing?.id || targetId,
+      firebaseUid: targetId,
       name: name || "",
       email: email || null,
       phone: phone || null,
       addresses: existing?.addresses || [],
     };
-    mockCustomers[firebaseUid] = updated;
+    mockCustomers[targetId] = updated;
     return updated;
   }
 
   if (!prisma) {
     if (process.env.NODE_ENV === "test") {
       const fallback = {
-        id: `cust_${Date.now()}`,
-        firebaseUid,
+        id: targetId,
+        firebaseUid: targetId,
         name: name || "",
         email: email || null,
         phone: phone || null,
         addresses: [],
       };
-      mockCustomers[firebaseUid] = fallback;
+      mockCustomers[targetId] = fallback;
       return fallback;
     }
     throw new Error("Prisma client is not initialized.");
   }
 
   const user = await prisma.user.upsert({
-    where: { firebaseUid },
+    where: { id: targetId },
     update: {
       name: name || undefined,
       email: email || undefined,
@@ -138,7 +152,7 @@ async function upsertCustomerProfile({ firebaseUid, name, email, phone, image })
       image: image || undefined,
     },
     create: {
-      firebaseUid,
+      id: targetId,
       name: name || null,
       email: email || null,
       phone: phone || null,
@@ -150,7 +164,7 @@ async function upsertCustomerProfile({ firebaseUid, name, email, phone, image })
 
   return {
     id: user.id,
-    firebaseUid: user.firebaseUid,
+    firebaseUid: user.firebaseUid || user.id,
     name: user.name || "",
     email: user.email || "",
     phone: user.phone || "",
@@ -159,8 +173,10 @@ async function upsertCustomerProfile({ firebaseUid, name, email, phone, image })
 }
 
 module.exports = {
+  findById,
   findByFirebaseUid,
   upsertCustomerProfile,
+  hasMockCustomer,
   __setMockCustomer,
   __deleteMockCustomer,
   __clearMockCustomers,
