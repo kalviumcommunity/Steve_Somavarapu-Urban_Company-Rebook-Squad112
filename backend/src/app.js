@@ -6,16 +6,8 @@ const customerRoutes = require("./routes/customer.routes");
 const bookingRoutes = require("./routes/booking.routes");
 const professionalRoutes = require("./routes/professional.routes");
 const { notFoundHandler, errorHandler } = require("./middleware/error.middleware");
-const { initializeFirebase } = require("./config/firebase");
 
 const app = express();
-
-// Initialize Firebase Admin SDK
-const firebaseAuth = initializeFirebase();
-if (!firebaseAuth && process.env.STRICT_FIREBASE_INIT === "true") {
-  console.error("[Fatal Error] Firebase initialization failed. Terminating startup.");
-  process.exit(1);
-}
 
 // CORS configuration using FRONTEND_URL
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
@@ -40,7 +32,6 @@ app.use("/api/customer", customerRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/professional", professionalRoutes);
 app.use("/api/professionals", professionalRoutes);
-
 
 // Error handling middleware
 app.use(notFoundHandler);

@@ -2,35 +2,9 @@ process.env.NODE_ENV = "test";
 process.env.ENABLE_MOCK_PRISMA = "true";
 require("dotenv").config();
 
-const firebaseConfig = require("../src/config/firebase");
-const { __setMockCustomer, __clearMockCustomers, hasMockCustomer } = require("../src/services/customer.service");
+const { generateToken } = require("../src/utils/jwt");
+const { __setMockCustomer, __clearMockCustomers } = require("../src/services/customer.service");
 const assert = require("assert");
-
-// Save original getFirebaseAuth and install shared mock unconditionally before requiring app
-const originalGetFirebaseAuth = firebaseConfig.getFirebaseAuth;
-
-const mockAuth = {
-  verifyIdToken: async (token) => {
-    if (token === "valid-test-token-404") {
-      return { uid: "non-existent-user-123", email: "test404@example.com" };
-    }
-    if (token === "valid-test-token-200") {
-      return { uid: "matching-user-456", email: "test200@example.com" };
-    }
-    if (token === "valid-test-token-toString") {
-      return { uid: "toString", email: "tostring@example.com" };
-    }
-    if (token === "valid-test-token-valueOf") {
-      return { uid: "valueOf", email: "valueof@example.com" };
-    }
-    if (token === "valid-test-token-proto") {
-      return { uid: "__proto__", email: "proto@example.com" };
-    }
-    throw new Error("Invalid token");
-  },
-};
-firebaseConfig.getFirebaseAuth = () => mockAuth;
-
 const app = require("../src/app");
 
 async function runTests() {
@@ -39,6 +13,12 @@ async function runTests() {
   const server = app.listen(0);
   const port = server.address().port;
   const baseUrl = `http://localhost:${port}`;
+
+  const token404 = generateToken({ id: "non-existent-user-123", email: "test404@example.com" });
+  const token200 = generateToken({ id: "matching-user-456", email: "test200@example.com" });
+  const tokenToString = generateToken({ id: "toString", email: "tostring@example.com" });
+  const tokenValueOf = generateToken({ id: "valueOf", email: "valueof@example.com" });
+  const tokenProto = generateToken({ id: "__proto__", email: "proto@example.com" });
 
   try {
     // Test Case 1: GET /api/customer/profile without token -> 401
@@ -55,7 +35,7 @@ async function runTests() {
     {
       __setMockCustomer("non-existent-user-123", null);
       const res404 = await fetch(`${baseUrl}/api/customer/profile`, {
-        headers: { Authorization: "Bearer valid-test-token-404" },
+        headers: { Authorization: `Bearer ${token404}` },
       });
       const body404 = await res404.json();
       assert.strictEqual(res404.status, 404, "Expected 404 when customer profile missing in DB");
@@ -65,9 +45,9 @@ async function runTests() {
 
       // Test Case 3: Verify null prototype own-property registry safety for "toString", "valueOf", "__proto__"
       const prototypeKeys = [
-        { uid: "toString", token: "valid-test-token-toString" },
-        { uid: "valueOf", token: "valid-test-token-valueOf" },
-        { uid: "__proto__", token: "valid-test-token-proto" },
+        { uid: "toString", token: tokenToString },
+        { uid: "valueOf", token: tokenValueOf },
+        { uid: "__proto__", token: tokenProto },
       ];
 
       for (const { uid, token } of prototypeKeys) {
@@ -101,13 +81,12 @@ async function runTests() {
       });
 
       const res200 = await fetch(`${baseUrl}/api/customer/profile`, {
-        headers: { Authorization: "Bearer valid-test-token-200" },
+        headers: { Authorization: `Bearer ${token200}` },
       });
       const body200 = await res200.json();
       assert.strictEqual(res200.status, 200, "Expected 200 with profile data");
       assert.strictEqual(body200.success, true);
       assert.strictEqual(body200.customer.id, "cust_cuid_123");
-      assert.strictEqual(body200.customer.firebaseUid, "matching-user-456");
       assert.strictEqual(body200.customer.name, "Steve Somavarapu");
       assert.strictEqual(body200.customer.email, "steve@example.com");
       assert.strictEqual(body200.customer.phone, "+1234567890");
@@ -120,7 +99,6 @@ async function runTests() {
     console.log("\n✅ ALL TEST CASES PASSED SUCCESSFULLY!");
   } finally {
     __clearMockCustomers();
-    firebaseConfig.getFirebaseAuth = originalGetFirebaseAuth;
     await new Promise((resolve) => server.close(resolve));
   }
 }

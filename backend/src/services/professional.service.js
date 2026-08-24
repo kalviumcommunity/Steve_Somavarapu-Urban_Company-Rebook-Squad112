@@ -122,7 +122,19 @@ async function getProfessionalAvailability({ professionalId, date }) {
     }
 
     const availKey = `${professionalId}:${date}`;
-    const mockSlots = mockAvailabilities[availKey] || [];
+    const mockSlots = Object.prototype.hasOwnProperty.call(mockAvailabilities, availKey)
+      ? mockAvailabilities[availKey]
+      : [
+          { startTime: "09:00", endTime: "10:00", status: "AVAILABLE" },
+          { startTime: "10:00", endTime: "11:00", status: "AVAILABLE" },
+          { startTime: "11:00", endTime: "12:00", status: "AVAILABLE" },
+          { startTime: "12:00", endTime: "13:00", status: "AVAILABLE" },
+          { startTime: "13:00", endTime: "14:00", status: "AVAILABLE" },
+          { startTime: "14:00", endTime: "15:00", status: "AVAILABLE" },
+          { startTime: "15:00", endTime: "16:00", status: "AVAILABLE" },
+          { startTime: "16:00", endTime: "17:00", status: "AVAILABLE" },
+          { startTime: "17:00", endTime: "18:00", status: "AVAILABLE" },
+        ];
 
     return {
       professionalId,

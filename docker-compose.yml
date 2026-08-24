@@ -1,0 +1,76 @@
+name: urban-company-rebook
+
+services:
+  # ==========================================================
+  # 1. PostgreSQL Database Service
+  # ==========================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: uc_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-urban_company_rebook}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-urban_company_rebook}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - uc_network
+
+  # ==========================================================
+  # 2. Node.js Express Backend Service (JWT Auth)
+  # ==========================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: uc_backend
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-urban_company_rebook}?schema=public
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173,http://localhost:80,http://localhost:3000,http://localhost}
+      JWT_SECRET: ${JWT_SECRET:-urban-company-rebook-jwt-secret-key-2026}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - uc_network
+
+  # ==========================================================
+  # 3. React + Vite Frontend (Nginx SPA)
+  # ==========================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5000}
+    container_name: uc_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - uc_network
+
+networks:
+  uc_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

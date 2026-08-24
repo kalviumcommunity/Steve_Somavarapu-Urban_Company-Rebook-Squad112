@@ -6,10 +6,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seeding for Urban Company Rebook...');
 
-  const testFirebaseUid = process.env.TEST_FIREBASE_UID?.trim();
-  if (!testFirebaseUid) {
-    throw new Error('TEST_FIREBASE_UID environment variable is required to seed customer user.');
-  }
+  const testFirebaseUid = process.env.TEST_FIREBASE_UID?.trim() || 'seed_customer_001';
+  const defaultPasswordHash = '$2b$10$hFEpkr/9HQtKFzkyXVoA6upkYbVILBnAsNaIuUjPSq3d.BYC6KPMS'; // password123
 
   const allowDestructiveSeed = process.env.ALLOW_DESTRUCTIVE_SEED === 'true' || process.argv.includes('--force');
 
@@ -89,9 +87,21 @@ async function main() {
       firebaseUid: testFirebaseUid,
       name: 'Suresh Kumar',
       email: 'suresh.kumar@example.com',
+      password: defaultPasswordHash,
       phone: '+919876543210',
       role: Role.CUSTOMER,
       image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    },
+  });
+
+  // Demo user for testing: Alex Johnson
+  await prisma.user.create({
+    data: {
+      name: 'Alex Johnson',
+      email: 'test@urbancompany.com',
+      password: defaultPasswordHash,
+      phone: '+1 555-0199',
+      role: Role.CUSTOMER,
     },
   });
 

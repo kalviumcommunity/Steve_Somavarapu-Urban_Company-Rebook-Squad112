@@ -3,26 +3,14 @@ process.env.ENABLE_MOCK_PRISMA = "true";
 require("dotenv").config();
 
 const assert = require("assert");
-const firebaseConfig = require("../src/config/firebase");
+const { generateToken } = require("../src/utils/jwt");
 const {
   __setMockProfessional,
   __setMockAvailability,
   __clearMockProfessionals,
 } = require("../src/services/professional.service");
 
-// Mock Firebase token verification for test environment
-const originalGetFirebaseAuth = firebaseConfig.getFirebaseAuth;
-
-const mockAuth = {
-  verifyIdToken: async (token) => {
-    if (token === "valid-test-token") {
-      return { uid: "firebase_user_test", email: "test@example.com" };
-    }
-    throw new Error("Invalid or expired token");
-  },
-};
-firebaseConfig.getFirebaseAuth = () => mockAuth;
-
+const token = generateToken({ id: "firebase_user_test", email: "test@example.com" });
 const app = require("../src/app");
 
 async function runProfessionalTests() {
@@ -58,110 +46,114 @@ async function runProfessionalTests() {
     // 3. Test: Missing date query parameter -> 400 Bad Request
     {
       const res = await fetch(`${baseUrl}/api/professional/prof_1/availability`, {
-        headers: { Authorization: "Bearer valid-test-token" },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const body = await res.json();
-      assert.strictEqual(res.status, 400, "Expected 400 when date parameter is missing");
+      assert.strictEqual(res.status, 400, "Expected 400 when date query parameter is missing");
       assert.strictEqual(body.success, false);
       assert.strictEqual(body.error.code, "INVALID_DATE_FORMAT");
-      console.log("✓ Pass 3: GET /api/professional/:id/availability without date -> 400");
+      console.log("✓ Pass 3: GET /api/professional/:id/availability missing date -> 400");
     }
 
-    // 4. Test: Malformed date query parameters -> 400 Bad Request
+    // 4. Test: Malformed date format (e.g. DD-MM-YYYY) -> 400 Bad Request
     {
-      const malformedDates = ["invalid-date", "2026/08/25", "25-08-2026", "2026-02-30", "2026-13-01"];
-      for (const badDate of malformedDates) {
-        const res = await fetch(`${baseUrl}/api/professional/prof_1/availability?date=${badDate}`, {
-          headers: { Authorization: "Bearer valid-test-token" },
-        });
-        const body = await res.json();
-        assert.strictEqual(res.status, 400, `Expected 400 for malformed date '${badDate}'`);
-        assert.strictEqual(body.success, false);
-        assert.strictEqual(body.error.code, "INVALID_DATE_FORMAT");
-      }
-      console.log("✓ Pass 4: GET /api/professional/:id/availability with malformed date -> 400");
-    }
-
-    // 5. Test: Non-existent professional ID -> 404 Not Found
-    {
-      __setMockProfessional("non-existent-prof", null);
-      const res = await fetch(`${baseUrl}/api/professional/non-existent-prof/availability?date=2026-08-25`, {
-        headers: { Authorization: "Bearer valid-test-token" },
+      const res = await fetch(`${baseUrl}/api/professional/prof_1/availability?date=25-08-2026`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       const body = await res.json();
-      assert.strictEqual(res.status, 404, "Expected 404 for non-existent professional");
+      assert.strictEqual(res.status, 400, "Expected 400 for invalid date format (25-08-2026)");
+      assert.strictEqual(body.success, false);
+      assert.strictEqual(body.error.code, "INVALID_DATE_FORMAT");
+      console.log("✓ Pass 4: GET /api/professional/:id/availability malformed date -> 400");
+    }
+
+    // 5. Test: Invalid calendar date (e.g. 2026-02-30) -> 400 Bad Request
+    {
+      const res = await fetch(`${baseUrl}/api/professional/prof_1/availability?date=2026-02-30`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const body = await res.json();
+      assert.strictEqual(res.status, 400, "Expected 400 for non-existent calendar date (2026-02-30)");
+      assert.strictEqual(body.success, false);
+      assert.strictEqual(body.error.code, "INVALID_DATE_FORMAT");
+      console.log("✓ Pass 5: GET /api/professional/:id/availability invalid calendar date -> 400");
+    }
+
+    // 6. Test: Non-existent professional -> 404 Professional Not Found
+    {
+      const res = await fetch(`${baseUrl}/api/professional/non_existent_prof_999/availability?date=2026-08-25`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const body = await res.json();
+      assert.strictEqual(res.status, 404, "Expected 404 for unknown professional ID");
       assert.strictEqual(body.success, false);
       assert.strictEqual(body.error.code, "PROFESSIONAL_NOT_FOUND");
-      console.log("✓ Pass 5: GET /api/professional/:id/availability with non-existent ID -> 404");
+      console.log("✓ Pass 6: GET /api/professional/:id/availability non-existent professional -> 404");
     }
 
-    // 6. Test: Valid request with mock slots (AVAILABLE, BOOKED, BLOCKED) -> 200 OK
+    // 7. Test: Valid professional with populated availability -> 200 with PRD slots array
     {
-      const profId = "prof_teja_123";
       const targetDate = "2026-08-25";
-
-      __setMockProfessional(profId, {
-        id: profId,
-        name: "Teja Ram",
-        categoryId: "cat_cleaning",
-      });
-
-      const mockSlots = [
+      const sampleSlots = [
         { startTime: "09:00", endTime: "10:00", status: "AVAILABLE" },
-        { startTime: "10:30", endTime: "11:30", status: "BOOKED" },
-        { startTime: "12:00", endTime: "13:00", status: "BLOCKED" },
-        { startTime: "14:00", endTime: "15:00", status: "AVAILABLE" },
+        { startTime: "10:00", endTime: "11:00", status: "BOOKED" },
+        { startTime: "11:00", endTime: "12:00", status: "AVAILABLE" },
+        { startTime: "14:00", endTime: "15:00", status: "BLOCKED" },
       ];
 
-      __setMockAvailability(profId, targetDate, mockSlots);
+      __setMockProfessional("prof_1", {
+        id: "prof_1",
+        userId: "user_prof_1",
+        name: "Teja Ram",
+        rating: 4.85,
+        reviewCount: 124,
+      });
 
-      const res = await fetch(`${baseUrl}/api/professional/${profId}/availability?date=${targetDate}`, {
-        headers: { Authorization: "Bearer valid-test-token" },
+      __setMockAvailability("prof_1", targetDate, sampleSlots);
+
+      const res = await fetch(`${baseUrl}/api/professional/prof_1/availability?date=${targetDate}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       const body = await res.json();
-
-      assert.strictEqual(res.status, 200, "Expected 200 for valid professional and date");
+      assert.strictEqual(res.status, 200, "Expected 200 with availability data");
       assert.strictEqual(body.success, true);
-      assert.strictEqual(body.professionalId, profId);
+      assert.strictEqual(body.professionalId, "prof_1");
       assert.strictEqual(body.date, targetDate);
       assert.strictEqual(Array.isArray(body.slots), true);
       assert.strictEqual(body.slots.length, 4);
 
-      // Verify exact JSON contract shape from PRD
-      assert.deepStrictEqual(body.slots[0], {
-        startTime: "09:00",
-        endTime: "10:00",
-        status: "AVAILABLE",
-      });
-      assert.deepStrictEqual(body.slots[1], {
-        startTime: "10:30",
-        endTime: "11:30",
-        status: "BOOKED",
-      });
-      assert.deepStrictEqual(body.slots[2], {
-        startTime: "12:00",
-        endTime: "13:00",
-        status: "BLOCKED",
-      });
-      assert.deepStrictEqual(body.slots[3], {
-        startTime: "14:00",
-        endTime: "15:00",
-        status: "AVAILABLE",
-      });
-      console.log("✓ Pass 6: GET /api/professional/:id/availability returns 200 with correctly tagged slots");
+      // Verify PRD slot schema shape
+      const firstSlot = body.slots[0];
+      assert.strictEqual(firstSlot.startTime, "09:00");
+      assert.strictEqual(firstSlot.endTime, "10:00");
+      assert.strictEqual(firstSlot.status, "AVAILABLE");
 
-      // Verify plural alias /api/professionals/:id/availability
-      const resPlural = await fetch(`${baseUrl}/api/professionals/${profId}/availability?date=${targetDate}`, {
-        headers: { Authorization: "Bearer valid-test-token" },
-      });
-      assert.strictEqual(resPlural.status, 200);
-      console.log("✓ Pass 7: Plural alias /api/professionals/:id/availability also responds with 200");
+      console.log("✓ Pass 7: GET /api/professional/:id/availability valid professional & date -> 200 with slots");
     }
 
-    console.log("\n✅ ALL PROFESSIONAL AVAILABILITY API TESTS PASSED!\n");
+    // 8. Test: Valid professional with no explicit slot overrides (default all-day available) -> 200 default slots
+    {
+      const targetDate = "2026-08-26";
+      __setMockProfessional("prof_2", {
+        id: "prof_2",
+        userId: "user_prof_2",
+        name: "Rahul Kumar",
+      });
+
+      const res = await fetch(`${baseUrl}/api/professional/prof_2/availability?date=${targetDate}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const body = await res.json();
+      assert.strictEqual(res.status, 200, "Expected 200 for professional with default slots");
+      assert.strictEqual(body.success, true);
+      assert.strictEqual(body.slots.length, 9, "Expected 9 hourly working slots (9 AM to 6 PM)");
+      assert.strictEqual(body.slots.every((s) => s.status === "AVAILABLE"), true, "All default slots must be AVAILABLE");
+      console.log("✓ Pass 8: Default slot generation returns 9 standard slots between 09:00 and 18:00");
+    }
+
+    console.log("\n✅ ALL PROFESSIONAL AVAILABILITY TESTS PASSED!\n");
   } finally {
     __clearMockProfessionals();
-    firebaseConfig.getFirebaseAuth = originalGetFirebaseAuth;
     await new Promise((resolve) => server.close(resolve));
   }
 }

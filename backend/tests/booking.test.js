@@ -3,7 +3,7 @@ process.env.ENABLE_MOCK_PRISMA = "true";
 require("dotenv").config();
 
 const assert = require("assert");
-const firebaseConfig = require("../src/config/firebase");
+const { generateToken } = require("../src/utils/jwt");
 const {
   __setMockBookings,
   __setMockBookingById,
@@ -19,24 +19,9 @@ const {
   __clearMockProfessionals,
 } = require("../src/services/professional.service");
 
-// Mock Firebase token verification for test environment
-const originalGetFirebaseAuth = firebaseConfig.getFirebaseAuth;
-
-const mockAuth = {
-  verifyIdToken: async (token) => {
-    if (token === "valid-user-no-bookings") {
-      return { uid: "firebase_user_empty", email: "empty@example.com" };
-    }
-    if (token === "valid-user-with-bookings") {
-      return { uid: "firebase_user_with_data", email: "data@example.com" };
-    }
-    if (token === "valid-user-other") {
-      return { uid: "firebase_user_other", email: "other@example.com" };
-    }
-    throw new Error("Invalid or expired token");
-  },
-};
-firebaseConfig.getFirebaseAuth = () => mockAuth;
+const tokenEmpty = generateToken({ id: "firebase_user_empty", email: "empty@example.com" });
+const tokenWithData = generateToken({ id: "firebase_user_with_data", email: "data@example.com" });
+const tokenOther = generateToken({ id: "firebase_user_other", email: "other@example.com" });
 
 const app = require("../src/app");
 
@@ -73,7 +58,7 @@ async function runBookingTests() {
       // 1.3: Valid token, no completed bookings -> 200 with empty array
       __setMockBookings("firebase_user_empty", []);
       const resEmpty = await fetch(`${baseUrl}/api/bookings/history`, {
-        headers: { Authorization: "Bearer valid-user-no-bookings" },
+        headers: { Authorization: `Bearer ${tokenEmpty}` },
       });
       const bodyEmpty = await resEmpty.json();
       assert.strictEqual(resEmpty.status, 200, "Expected 200 for user with no bookings");
@@ -122,7 +107,7 @@ async function runBookingTests() {
       __setMockBookings("firebase_user_with_data", sampleBookings);
 
       const resHistory = await fetch(`${baseUrl}/api/bookings/history`, {
-        headers: { Authorization: "Bearer valid-user-with-bookings" },
+        headers: { Authorization: `Bearer ${tokenWithData}` },
       });
       const bodyHistory = await resHistory.json();
       assert.strictEqual(resHistory.status, 200);
@@ -147,7 +132,7 @@ async function runBookingTests() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer valid-user-with-bookings",
+          Authorization: `Bearer ${tokenWithData}`,
         },
         body: JSON.stringify({ originalBookingId: "non_existent_bk" }),
       });
@@ -169,7 +154,7 @@ async function runBookingTests() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer valid-user-other",
+          Authorization: `Bearer ${tokenOther}`,
         },
         body: JSON.stringify({ originalBookingId: "bk_comp_1" }),
       });
@@ -190,7 +175,7 @@ async function runBookingTests() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer valid-user-with-bookings",
+          Authorization: `Bearer ${tokenWithData}`,
         },
         body: JSON.stringify({ originalBookingId: "bk_comp_1", date: targetDate }),
       });
@@ -212,7 +197,7 @@ async function runBookingTests() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer valid-user-with-bookings",
+          Authorization: `Bearer ${tokenWithData}`,
         },
         body: JSON.stringify({ originalBookingId: "bk_comp_1", date: targetDate }),
       });
@@ -247,7 +232,7 @@ async function runBookingTests() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer valid-user-with-bookings",
+          Authorization: `Bearer ${tokenWithData}`,
         },
         body: JSON.stringify({
           originalBookingId: "bk_comp_1",
@@ -271,7 +256,7 @@ async function runBookingTests() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer valid-user-with-bookings",
+          Authorization: `Bearer ${tokenWithData}`,
         },
         body: JSON.stringify({
           originalBookingId: "bk_comp_1",
@@ -291,7 +276,7 @@ async function runBookingTests() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer valid-user-with-bookings",
+          Authorization: `Bearer ${tokenWithData}`,
         },
         body: JSON.stringify({
           originalBookingId: "bk_comp_1",
@@ -314,7 +299,7 @@ async function runBookingTests() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer valid-user-with-bookings",
+          Authorization: `Bearer ${tokenWithData}`,
         },
         body: JSON.stringify({
           originalBookingId: "bk_comp_1",
@@ -338,7 +323,6 @@ async function runBookingTests() {
     __clearMockBookings();
     __clearMockCustomers();
     __clearMockProfessionals();
-    firebaseConfig.getFirebaseAuth = originalGetFirebaseAuth;
     await new Promise((resolve) => server.close(resolve));
   }
 }
