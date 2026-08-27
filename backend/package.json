@@ -19,6 +19,7 @@
     "test:booking": "node tests/booking.test.js",
     "test:professional": "node tests/professional.test.js",
     "prisma:generate": "prisma generate",
+    "db:seed": "node scripts/seed.js",
     "user:create": "node scripts/create-firebase-user.js"
   },
   "keywords": [],
