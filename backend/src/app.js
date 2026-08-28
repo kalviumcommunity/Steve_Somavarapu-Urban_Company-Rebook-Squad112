@@ -37,6 +37,23 @@ app.use(
 // Body parser
 app.use(express.json());
 
+// Root welcome route
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    name: "Urban Company One-Click Rebooking API",
+    status: "online",
+    version: "1.0.0",
+    endpoints: {
+      health: "/api/health",
+      auth: "/api/auth",
+      bookings: "/api/bookings",
+      customer: "/api/customer",
+      professionals: "/api/professionals"
+    }
+  });
+});
+
 // Routes
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
