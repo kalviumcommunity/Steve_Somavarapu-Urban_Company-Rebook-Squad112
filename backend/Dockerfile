@@ -14,11 +14,9 @@ RUN npm ci
 COPY prisma ./prisma
 RUN npx prisma generate
 
-# Copy source code, scripts, and entrypoint
-COPY src ./src
-COPY scripts ./scripts
-COPY docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh
+# Copy source code and files
+COPY . .
+RUN chmod +x ./docker-entrypoint.sh 2>/dev/null || true
 
 # Set default environment variables
 ENV NODE_ENV=production
