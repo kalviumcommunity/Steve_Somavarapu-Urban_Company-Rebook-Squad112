@@ -9,15 +9,27 @@ const { notFoundHandler, errorHandler } = require("./middleware/error.middleware
 
 const app = express();
 
-// CORS configuration using FRONTEND_URL
+// CORS configuration supporting comma-separated URLs, Vercel deployments, or wildcards
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-const allowedOrigins = frontendUrl.includes(",")
+const configuredOrigins = frontendUrl.includes(",")
   ? frontendUrl.split(",").map((url) => url.trim())
-  : frontendUrl;
+  : [frontendUrl];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+      if (!origin) return callback(null, true);
+      if (
+        frontendUrl === "*" ||
+        configuredOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app") ||
+        origin.includes("localhost")
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
     credentials: true,
   })
 );
